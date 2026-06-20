@@ -1,13 +1,20 @@
 """执行者(Executor) - 可行性评估与落地路径"""
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
 from .base import Agent, Role, Message
+
+if TYPE_CHECKING:
+    from ..llm import LLMProvider
 
 
 class Executor(Agent):
     """执行者 - 负责评估可行性和制定执行计划"""
     
-    def __init__(self, name: str = None):
-        super().__init__(Role.EXECUTOR, name)
+    def __init__(self, name: str = None, llm: "LLMProvider" = None):
+        super().__init__(Role.EXECUTOR, name, llm=llm)
         self._temperature = 0.5  # 执行者温度较低，注重实际
     
     async def think(self, context: list[Message]) -> Message:

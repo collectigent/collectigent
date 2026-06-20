@@ -4,8 +4,11 @@ from __future__ import annotations
 
 from enum import Enum
 from dataclasses import dataclass, field
-from typing import Any, Optional
+from typing import Any, Optional, TYPE_CHECKING
 import uuid
+
+if TYPE_CHECKING:
+    from ..llm import LLMProvider, LLMConfig
 
 
 class Role(Enum):
@@ -40,13 +43,24 @@ class Message:
 class Agent:
     """Agent基类 - 所有角色的父类"""
     
-    def __init__(self, role: Role, name: str = None):
+    def __init__(self, role: Role, name: str = None, llm: "LLMProvider" = None):
         self.role = role
         self.name = name or role.value.capitalize()
+        self._llm = llm
         self._temperature = 0.7
         self._tools = []
         self._memory = None
         self._state = {}
+    
+    @property
+    def llm(self) -> Optional["LLMProvider"]:
+        """获取LLM提供商"""
+        return self._llm
+    
+    @llm.setter
+    def llm(self, provider: "LLMProvider"):
+        """设置LLM提供商"""
+        self._llm = provider
     
     @property
     def temperature(self) -> float:
@@ -73,6 +87,83 @@ class Agent:
     def get_state(self, key: str) -> Any:
         """获取Agent状态"""
         return self._state.get(key)
+    
+    async def call_llm(
+        self,
+        prompt: str,
+        system_prompt: Optional[str] = None,
+        history: Optional[list[dict[str, str]]] = None,
+        **kwargs
+    ) -> str:
+        """
+        调用LLM生成响应
+        
+        Args:
+            prompt: 用户输入
+            system_prompt: 系统提示词（默认使用角色提示词）
+            history: 对话历史
+            **kwargs: 额外参数
+            
+        Returns:
+            LLM生成的文本
+        """
+        if not self._llm:
+            raise RuntimeError(f"Agent {self.name} 未配置LLM提供商")
+        
+        if system_prompt is None:
+            system_prompt = self.get_system_prompt()
+        
+        response = await self._llm.generate(
+            prompt=prompt,
+            system_prompt=system_prompt,
+            history=history,
+            temperature=kwargs.get("temperature", self._temperature),
+            **kwargs
+        )
+        
+        # 记录到记忆系统
+        if self._memory:
+            self._memory.remember(f"llm_call_{self.role.value}", {
+                "prompt": prompt,
+                "response": response.content,
+                "usage": response.usage,
+            })
+        
+        return response.content
+    
+    async def call_llm_stream(
+        self,
+        prompt: str,
+        system_prompt: Optional[str] = None,
+        history: Optional[list[dict[str, str]]] = None,
+        **kwargs
+    ):
+        """
+        流式调用LLM生成响应
+        
+        Args:
+            prompt: 用户输入
+            system_prompt: 系统提示词
+            history: 对话历史
+            **kwargs: 额外参数
+            
+        Yields:
+            文本片段
+        """
+        if not self._llm:
+            raise RuntimeError(f"Agent {self.name} 未配置LLM提供商")
+        
+        if system_prompt is None:
+            system_prompt = self.get_system_prompt()
+        
+        async for chunk in self._llm.generate_stream(
+            prompt=prompt,
+            system_prompt=system_prompt,
+            history=history,
+            temperature=kwargs.get("temperature", self._temperature),
+            **kwargs
+        ):
+            yield chunk
     
     async def think(self, context: list[Message]) -> Message:
         """

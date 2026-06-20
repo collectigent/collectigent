@@ -1,13 +1,20 @@
 """研究者(Researcher) - 信息收集与深度分析"""
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
 from .base import Agent, Role, Message
+
+if TYPE_CHECKING:
+    from ..llm import LLMProvider
 
 
 class Researcher(Agent):
     """研究者 - 负责信息收集和深度分析"""
     
-    def __init__(self, name: str = None):
-        super().__init__(Role.RESEARCHER, name)
+    def __init__(self, name: str = None, llm: "LLMProvider" = None):
+        super().__init__(Role.RESEARCHER, name, llm=llm)
         self._temperature = 0.8  # 研究者温度较高，更具创造性
         self._findings = []
     

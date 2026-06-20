@@ -1,13 +1,20 @@
 """创新者(Innovator) - 突破性想法产生"""
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
 from .base import Agent, Role, Message
+
+if TYPE_CHECKING:
+    from ..llm import LLMProvider
 
 
 class Innovator(Agent):
     """创新者 - 负责产生突破性想法"""
     
-    def __init__(self, name: str = None):
-        super().__init__(Role.INNOVATOR, name)
+    def __init__(self, name: str = None, llm: "LLMProvider" = None):
+        super().__init__(Role.INNOVATOR, name, llm=llm)
         self._temperature = 1.0  # 创新者温度最高，最大创造性
         self._ideas = []
     

@@ -1,13 +1,20 @@
 """领导者(Leader) - 任务分解与全局协调"""
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
 from .base import Agent, Role, Message
+
+if TYPE_CHECKING:
+    from ..llm import LLMProvider
 
 
 class Leader(Agent):
     """领导者 - 负责任务分解、策略制定和全局协调"""
     
-    def __init__(self, name: str = None):
-        super().__init__(Role.LEADER, name)
+    def __init__(self, name: str = None, llm: "LLMProvider" = None):
+        super().__init__(Role.LEADER, name, llm=llm)
         self._temperature = 0.6  # 领导者温度较低，更稳定
     
     async def think(self, context: list[Message]) -> Message:

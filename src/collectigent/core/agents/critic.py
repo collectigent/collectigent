@@ -1,13 +1,20 @@
 """批判者(Critic) - 挑战假设与风险识别"""
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
 from .base import Agent, Role, Message
+
+if TYPE_CHECKING:
+    from ..llm import LLMProvider
 
 
 class Critic(Agent):
     """批判者 - 负责挑战假设和识别风险"""
     
-    def __init__(self, name: str = None):
-        super().__init__(Role.CRITIC, name)
+    def __init__(self, name: str = None, llm: "LLMProvider" = None):
+        super().__init__(Role.CRITIC, name, llm=llm)
         self._temperature = 0.5  # 批判者温度较低，更理性
         self._objections = []
     

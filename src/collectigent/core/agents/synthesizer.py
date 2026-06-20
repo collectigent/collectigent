@@ -1,13 +1,20 @@
 """综合者(Synthesizer) - 整合多方观点"""
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
 from .base import Agent, Role, Message
+
+if TYPE_CHECKING:
+    from ..llm import LLMProvider
 
 
 class Synthesizer(Agent):
     """综合者 - 负责整合多方观点形成结论"""
     
-    def __init__(self, name: str = None):
-        super().__init__(Role.SYNTHESIZER, name)
+    def __init__(self, name: str = None, llm: "LLMProvider" = None):
+        super().__init__(Role.SYNTHESIZER, name, llm=llm)
         self._temperature = 0.6
     
     async def think(self, context: list[Message]) -> Message:
