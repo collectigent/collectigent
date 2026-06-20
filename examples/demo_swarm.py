@@ -1,6 +1,8 @@
 """群体智能演示 - 展示6角色协作产生智能涌现"""
 
 import asyncio
+import os
+
 from collectigent import Swarm, LLMFactory
 from collectigent.core.agents import (
     Leader, Researcher, Critic, Innovator, Synthesizer, Executor,
@@ -12,13 +14,18 @@ from collectigent.core.knowledge import RAGFactory
 async def demo_swarm_intelligence():
     """演示群体智能协作"""
     
+    # 检查API Key
+    if not os.environ.get("ZHIPU_API_KEY"):
+        print("❌ 请设置 ZHIPU_API_KEY 环境变量")
+        return
+    
     print("=" * 60)
     print("群体智能演示 - 6角色协作产生智能涌现")
     print("=" * 60)
     
-    # 1. 创建LLM（使用OpenAI）
-    print("\n[1] 初始化LLM提供商...")
-    llm = LLMFactory.create_openai(model="gpt-4o-mini")
+    # 1. 创建LLM（使用GLM）
+    print("\n[1] 初始化LLM提供商 (GLM-4)...")
+    llm = LLMFactory.create_glm(model="glm-4")
     print("    ✓ LLM初始化完成")
     
     # 2. 创建知识库（可选，增强Agent的知识）
@@ -48,7 +55,7 @@ async def demo_swarm_intelligence():
     
     # 3. 创建Swarm编排器
     print("\n[3] 创建Swarm编排器...")
-    swarm = Swarm(llm=llm)
+    swarm = Swarm()
     print("    ✓ Swarm编排器创建完成")
     
     # 4. 注册6个Agent角色
