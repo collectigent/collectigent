@@ -30,18 +30,52 @@ class Leader(Agent):
         # 解析上下文中的关键信息
         user_task = self._extract_task(context)
         
-        # 分解任务为子任务
-        subtasks = self._decompose_task(user_task)
+        # 调用LLM进行任务分解
+        json_template = '''{
+    "main_task": "主要任务描述",
+    "analysis": "对任务的初步分析",
+    "subtasks": [
+        {"role": "researcher", "task": "研究子任务"},
+        {"role": "critic", "task": "批判分析子任务"},
+        {"role": "innovator", "task": "创新方案子任务"}
+    ]
+}'''
+        
+        prompt = f"""作为群体智能的领导者，请分析以下任务并进行分解：
+
+任务：{user_task}
+
+请用JSON格式返回任务分解，格式如下：
+{json_template}"""
+        
+        try:
+            llm_response = await self.call_llm(prompt)
+            import json
+            # 尝试解析JSON
+            result = json.loads(llm_response)
+            content = {
+                "type": "task_allocation",
+                **result,
+                "current_phase": "decomposition",
+            }
+        except Exception:
+            # 如果解析失败，使用默认分解
+            content = {
+                "type": "task_allocation",
+                "main_task": user_task,
+                "analysis": llm_response if 'llm_response' in dir() else "需要深入分析",
+                "subtasks": [
+                    {"role": Role.RESEARCHER, "task": f"深入研究: {user_task}"},
+                    {"role": Role.CRITIC, "task": f"批判性分析: {user_task}"},
+                    {"role": Role.INNOVATOR, "task": f"提出创新方案: {user_task}"},
+                ],
+                "current_phase": "decomposition",
+            }
         
         # 返回任务分配消息
         return Message(
             sender=self.role,
-            content={
-                "type": "task_allocation",
-                "main_task": user_task,
-                "subtasks": subtasks,
-                "current_phase": "decomposition",
-            },
+            content=content,
             metadata={"phase": "planning"}
         )
     
