@@ -2,6 +2,16 @@
 
 import asyncio
 import os
+from pathlib import Path
+
+# 加载 .env 文件
+env_file = Path(__file__).parent.parent / ".env"
+if env_file.exists():
+    with open(env_file) as f:
+        for line in f:
+            if "=" in line:
+                key, value = line.strip().split("=", 1)
+                os.environ[key] = value
 
 from collectigent import Swarm, LLMFactory
 from collectigent.core.agents import (
@@ -114,7 +124,18 @@ async def demo_swarm_intelligence():
         # 显示最终回答
         print("\n📝 最终回答:")
         print("-" * 60)
-        print(result.get("response", "无结果"))
+        
+        # 获取结果 - 可能是字符串或字典
+        raw_result = result.get("result", "无结果")
+        if isinstance(raw_result, dict):
+            if "final_synthesis" in raw_result:
+                print(raw_result["final_synthesis"])
+            elif "synthesis" in raw_result:
+                print(raw_result["synthesis"])
+            else:
+                print(raw_result)
+        else:
+            print(raw_result)
         print("-" * 60)
         
         # 显示涌现指标
