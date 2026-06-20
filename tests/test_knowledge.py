@@ -3,6 +3,7 @@
 import pytest
 import os
 import tempfile
+from unittest.mock import MagicMock, patch
 
 
 class TestDocumentLoader:
@@ -96,19 +97,29 @@ class TestTextSplitter:
 class TestEmbeddingProvider:
     """向量化器测试"""
     
-    def test_create_local_embedding(self):
-        """测试创建本地Embedding"""
-        from collectigent.core.knowledge.embedding import EmbeddingConfig, EmbeddingProvider, EmbeddingProviderType
+    def test_create_local_embedding_with_mock(self):
+        """测试创建本地Embedding（使用mock）"""
+        import sys
+        from unittest.mock import patch
         
-        config = EmbeddingConfig(
-            provider=EmbeddingProviderType.LOCAL,
-            model="all-MiniLM-L6-v2",
-        )
+        # 模拟sentence_transformers模块
+        mock_st = MagicMock()
+        mock_model = MagicMock()
+        mock_model.encode = MagicMock(return_value=[[0.1] * 384])
+        mock_st.SentenceTransformer = MagicMock(return_value=mock_model)
         
-        provider = EmbeddingProvider.create(config)
-        
-        assert provider is not None
-        assert isinstance(provider, EmbeddingProvider)
+        with patch.dict(sys.modules, {"sentence_transformers": mock_st}):
+            from collectigent.core.knowledge.embedding import EmbeddingConfig, EmbeddingProvider, EmbeddingProviderType
+            
+            config = EmbeddingConfig(
+                provider=EmbeddingProviderType.LOCAL,
+                model="all-MiniLM-L6-v2",
+            )
+            
+            provider = EmbeddingProvider.create(config)
+            
+            assert provider is not None
+            assert isinstance(provider, EmbeddingProvider)
 
 
 class TestVectorStore:
@@ -175,105 +186,135 @@ class TestVectorStore:
 class TestRetriever:
     """检索器测试"""
     
-    def test_semantic_retriever(self):
-        """测试语义检索器"""
-        from collectigent.core.knowledge.retriever import RetrieverConfig, SemanticRetriever
-        from collectigent.core.knowledge.embedding import EmbeddingConfig, EmbeddingProviderType
-        from collectigent.core.knowledge.vector_store import VectorStoreConfig, VectorStoreType
+    def test_semantic_retriever_with_mock(self):
+        """测试语义检索器（使用mock）"""
+        import sys
+        from unittest.mock import patch
         
-        embed_config = EmbeddingConfig(
-            provider=EmbeddingProviderType.LOCAL,
-            model="all-MiniLM-L6-v2",
-            dimensions=384,
-        )
+        # 模拟sentence_transformers模块
+        mock_st = MagicMock()
+        mock_model = MagicMock()
+        mock_model.encode = MagicMock(return_value=[[0.1] * 384])
+        mock_st.SentenceTransformer = MagicMock(return_value=mock_model)
         
-        store_config = VectorStoreConfig(
-            store_type=VectorStoreType.FAISS,
-            dimension=384,
-        )
-        
-        config = RetrieverConfig(
-            embedding_config=embed_config,
-            vector_store_config=store_config,
-            top_k=3,
-        )
-        
-        retriever = SemanticRetriever(config)
-        
-        assert retriever is not None
+        with patch.dict(sys.modules, {"sentence_transformers": mock_st}):
+            from collectigent.core.knowledge.retriever import RetrieverConfig, SemanticRetriever
+            from collectigent.core.knowledge.embedding import EmbeddingConfig, EmbeddingProviderType
+            from collectigent.core.knowledge.vector_store import VectorStoreConfig, VectorStoreType
+            
+            embed_config = EmbeddingConfig(
+                provider=EmbeddingProviderType.LOCAL,
+                model="all-MiniLM-L6-v2",
+                dimensions=384,
+            )
+            
+            store_config = VectorStoreConfig(
+                store_type=VectorStoreType.FAISS,
+                dimension=384,
+            )
+            
+            config = RetrieverConfig(
+                embedding_config=embed_config,
+                vector_store_config=store_config,
+                top_k=3,
+            )
+            
+            retriever = SemanticRetriever(config)
+            
+            assert retriever is not None
 
 
 class TestRAGSystem:
     """RAG系统测试"""
     
-    def test_basic_rag(self):
-        """测试基础RAG系统"""
-        from collectigent.core.knowledge.rag import RAGConfig, BasicRAGSystem
-        from collectigent.core.knowledge.retriever import RetrieverConfig
-        from collectigent.core.knowledge.embedding import EmbeddingConfig, EmbeddingProviderType
-        from collectigent.core.knowledge.vector_store import VectorStoreConfig, VectorStoreType
+    def test_basic_rag_with_mock(self):
+        """测试基础RAG系统（使用mock）"""
+        import sys
+        from unittest.mock import patch
         
-        embed_config = EmbeddingConfig(
-            provider=EmbeddingProviderType.LOCAL,
-            model="all-MiniLM-L6-v2",
-            dimensions=384,
-        )
+        # 模拟sentence_transformers模块
+        mock_st = MagicMock()
+        mock_model = MagicMock()
+        mock_model.encode = MagicMock(return_value=[[0.1] * 384])
+        mock_st.SentenceTransformer = MagicMock(return_value=mock_model)
         
-        store_config = VectorStoreConfig(
-            store_type=VectorStoreType.FAISS,
-            dimension=384,
-        )
-        
-        retriever_config = RetrieverConfig(
-            embedding_config=embed_config,
-            vector_store_config=store_config,
-            top_k=3,
-        )
-        
-        rag_config = RAGConfig(
-            retriever_config=retriever_config,
-            llm_config=None,  # 不使用LLM
-        )
-        
-        rag = BasicRAGSystem(rag_config)
-        
-        assert rag is not None
+        with patch.dict(sys.modules, {"sentence_transformers": mock_st}):
+            from collectigent.core.knowledge.rag import RAGConfig, BasicRAGSystem
+            from collectigent.core.knowledge.retriever import RetrieverConfig
+            from collectigent.core.knowledge.embedding import EmbeddingConfig, EmbeddingProviderType
+            from collectigent.core.knowledge.vector_store import VectorStoreConfig, VectorStoreType
+            
+            embed_config = EmbeddingConfig(
+                provider=EmbeddingProviderType.LOCAL,
+                model="all-MiniLM-L6-v2",
+                dimensions=384,
+            )
+            
+            store_config = VectorStoreConfig(
+                store_type=VectorStoreType.FAISS,
+                dimension=384,
+            )
+            
+            retriever_config = RetrieverConfig(
+                embedding_config=embed_config,
+                vector_store_config=store_config,
+                top_k=3,
+            )
+            
+            rag_config = RAGConfig(
+                retriever_config=retriever_config,
+                llm_config=None,  # 不使用LLM
+            )
+            
+            rag = BasicRAGSystem(rag_config)
+            
+            assert rag is not None
     
-    def test_add_document(self):
-        """测试添加文档"""
-        from collectigent.core.knowledge.rag import RAGConfig, BasicRAGSystem
-        from collectigent.core.knowledge.retriever import RetrieverConfig
-        from collectigent.core.knowledge.embedding import EmbeddingConfig, EmbeddingProviderType
-        from collectigent.core.knowledge.vector_store import VectorStoreConfig, VectorStoreType
+    def test_add_document_with_mock(self):
+        """测试添加文档（使用mock）"""
+        import sys
+        from unittest.mock import patch
         
-        embed_config = EmbeddingConfig(
-            provider=EmbeddingProviderType.LOCAL,
-            model="all-MiniLM-L6-v2",
-            dimensions=384,
-        )
+        # 模拟sentence_transformers模块
+        mock_st = MagicMock()
+        mock_model = MagicMock()
+        mock_model.encode = MagicMock(return_value=[[0.1] * 384])
+        mock_st.SentenceTransformer = MagicMock(return_value=mock_model)
         
-        store_config = VectorStoreConfig(
-            store_type=VectorStoreType.FAISS,
-            dimension=384,
-        )
-        
-        retriever_config = RetrieverConfig(
-            embedding_config=embed_config,
-            vector_store_config=store_config,
-        )
-        
-        rag_config = RAGConfig(
-            retriever_config=retriever_config,
-            llm_config=None,
-        )
-        
-        rag = BasicRAGSystem(rag_config)
-        
-        import asyncio
-        asyncio.run(rag.add_document("测试知识库内容", "test_source"))
-        
-        stats = asyncio.run(rag.get_knowledge_base_stats())
-        assert stats["vector_count"] == 1
+        with patch.dict(sys.modules, {"sentence_transformers": mock_st}):
+            from collectigent.core.knowledge.rag import RAGConfig, BasicRAGSystem
+            from collectigent.core.knowledge.retriever import RetrieverConfig
+            from collectigent.core.knowledge.embedding import EmbeddingConfig, EmbeddingProviderType
+            from collectigent.core.knowledge.vector_store import VectorStoreConfig, VectorStoreType
+            
+            embed_config = EmbeddingConfig(
+                provider=EmbeddingProviderType.LOCAL,
+                model="all-MiniLM-L6-v2",
+                dimensions=384,
+            )
+            
+            store_config = VectorStoreConfig(
+                store_type=VectorStoreType.FAISS,
+                dimension=384,
+            )
+            
+            retriever_config = RetrieverConfig(
+                embedding_config=embed_config,
+                vector_store_config=store_config,
+            )
+            
+            rag_config = RAGConfig(
+                retriever_config=retriever_config,
+                llm_config=None,
+            )
+            
+            rag = BasicRAGSystem(rag_config)
+            
+            import asyncio
+            asyncio.run(rag.add_document("测试知识库内容", "test_source"))
+            
+            stats = asyncio.run(rag.get_knowledge_base_stats())
+            assert stats["vector_count"] == 1
 
 
 if __name__ == "__main__":

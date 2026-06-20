@@ -44,7 +44,8 @@ class RAGSystem(ABC):
     
     def __init__(self, config: RAGConfig):
         self.config = config
-        self._retriever = Retriever(config.retriever_config)
+        from .retriever import SemanticRetriever
+        self._retriever = SemanticRetriever(config.retriever_config)
         
         if config.llm_config:
             self._llm = LLMFactory.create(config.llm_config)
