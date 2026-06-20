@@ -17,6 +17,7 @@
 | **任务编排器** | Agent 调度、消息路由、状态管理 | 框架基础设施 |
 | **基础涌现指标** | 群体增益、多样性指数、错误修正率的计算接口 | 建立"可验证"的品牌认知 |
 | **LLM多提供商集成** | 支持OpenAI、Anthropic、GLM、DeepSeek、Doubao、Qwen | 灵活适配多种大模型 |
+| **知识库检索集成** | RAG检索增强生成、多向量存储支持(FAISS/Pinecone/Weaviate) | 智能问答、知识增强 |
 
 ## 安装
 
@@ -105,9 +106,18 @@ collectigent/
 │           ├── deepseek.py  # DeepSeek提供商
 │           ├── doubao.py    # 字节跳动提供商
 │           └── qwen.py      # 阿里云通义千问提供商
+│       └── knowledge/       # 知识库检索模块
+│           ├── __init__.py
+│           ├── loader.py    # 文档加载器(txt/md/pdf/docx)
+│           ├── splitter.py  # 文本分块器
+│           ├── embedding.py # Embedding向量化器
+│           ├── vector_store.py # 向量存储(FAISS/Pinecone/Weaviate)
+│           ├── retriever.py # 检索器
+│           └── rag.py       # RAG系统
 └── tests/
     ├── test_collectigent.py
-    └── test_llm.py
+    ├── test_llm.py
+    └── test_knowledge.py
 ```
 
 ## 核心概念
@@ -217,6 +227,68 @@ leader = Leader(llm=llm)
 response = await leader.call_llm("分析这个问题")
 ```
 
+### 知识库检索集成 (RAG)
+
+支持多种向量存储和Embedding提供商，实现检索增强生成：
+
+```python
+from collectigent import RAGFactory
+
+# 创建RAG系统（使用本地FAISS和MiniLM）
+rag = RAGFactory.create_basic(
+    embedding_provider="local",
+    vector_store="faiss",
+    llm_provider="openai",
+)
+
+# 添加文档到知识库
+await rag.add_document("群体智能是指多个智能体通过协作产生的涌现智能。")
+
+# 执行检索增强问答
+result = await rag.query("什么是群体智能？")
+print(result.answer)
+```
+
+**支持的向量存储：**
+
+| 存储类型 | 描述 |
+|---------|------|
+| FAISS | 本地向量数据库（Meta） |
+| Pinecone | 云向量数据库 |
+| Weaviate | 开源向量数据库 |
+| Chroma | 轻量级向量数据库 |
+| Milvus | 企业级向量数据库 |
+
+**支持的Embedding提供商：**
+
+| 提供商 | 环境变量 |
+|--------|----------|
+| OpenAI | OPENAI_API_KEY |
+| 智谱AI | ZHIPU_API_KEY |
+| 百川智能 | BAICHUAN_API_KEY |
+| Minimax | MINIMAX_API_KEY |
+| Local (MiniLM) | 无需API Key |
+
+**高级RAG系统（支持多轮对话）：**
+
+```python
+from collectigent import RAGFactory
+
+# 创建高级RAG系统
+rag = RAGFactory.create_advanced(
+    embedding_provider="openai",
+    vector_store="pinecone",
+    llm_provider="anthropic",
+)
+
+# 从目录构建知识库
+await rag.build_knowledge_base("./docs/")
+
+# 多轮对话
+result1 = await rag.query("什么是群体智能？")
+result2 = await rag.query("它和传统AI有什么区别？")  # 支持上下文理解
+```
+
 ## 开发
 
 ```bash
@@ -233,7 +305,7 @@ pytest tests/ -v
 ## Roadmap
 
 - [x] v0.2: LLM集成（OpenAI/Anthropic/GLM/DeepSeek/Doubao/Qwen）
-- [ ] v0.3: 知识库检索集成
+- [x] v0.3: 知识库检索集成（RAG/FAISS/Pinecone）
 - [ ] v0.4: 可视化调试工具
 - [ ] v1.0: 生产级稳定版
 

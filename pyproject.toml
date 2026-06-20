@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "collectigent"
-version = "0.1.0"
+version = "0.3.0"
 description = "群体智能涌现引擎 - 可量化、可复现的群体智能开源框架"
 readme = "README.md"
 license = "Apache-2.0"
@@ -19,6 +19,8 @@ keywords = [
     "AI",
     "LLM",
     "swarm",
+    "RAG",
+    "knowledge-base",
 ]
 classifiers = [
     "Development Status :: 3 - Alpha",
@@ -52,12 +54,28 @@ llm = [
     "zhipuai>=2.0",
     "dashscope>=2.0",
 ]
+knowledge = [
+    "faiss-cpu>=1.7",
+    "sentence-transformers>=2.2",
+    "PyPDF2>=3.0",
+    "python-docx>=0.8",
+    "rank-bm25>=0.2",
+    "jieba>=0.42",
+    "chromadb>=0.4",
+]
 all = [
     "openai>=1.0",
     "anthropic>=0.18",
     "zhipuai>=2.0",
     "volcengine-python>=1.0",
     "dashscope>=2.0",
+    "faiss-cpu>=1.7",
+    "sentence-transformers>=2.2",
+    "PyPDF2>=3.0",
+    "python-docx>=0.8",
+    "rank-bm25>=0.2",
+    "jieba>=0.42",
+    "chromadb>=0.4",
 ]
 
 [project.urls]
