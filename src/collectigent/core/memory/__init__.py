@@ -99,7 +99,7 @@ class ShortTermMemory(Memory):
     def _evict_lru(self) -> None:
         """淘汰最久未使用的条目"""
         if self._access_order:
-            oldest = self._access_order.pop(0)
+            oldest = self._access_order[0]
             self.delete(oldest)
     
     def clear(self) -> None:
@@ -227,7 +227,10 @@ class MemorySystem:
         if value is not None:
             return value
         # 再查长期
-        return self.long_term.get(key)
+        value = self.long_term.get(key)
+        if value is not None and isinstance(value, dict) and value.get("type") == "knowledge":
+            return value.get("content")
+        return value
     
     def search_memories(self, query: str) -> dict[str, list]:
         """搜索记忆"""

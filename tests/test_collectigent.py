@@ -47,7 +47,7 @@ class TestMemory:
     """记忆系统测试"""
     
     def test_short_term_memory(self):
-        memory = ShortTermMemory(max_items=3)
+        memory = ShortTermMemory(max_items=2)
         
         # 存储
         memory.set("key1", "value1")
