@@ -41,6 +41,10 @@ async def demo_swarm_intelligence():
     # 2. 创建知识库（可选，增强Agent的知识）
     print("\n[2] 初始化知识库...")
     try:
+        import socket
+        # 设置超时时间
+        socket.setdefaulttimeout(10)
+        
         rag = RAGFactory.create_basic(
             embedding_provider="local",
             vector_store="faiss",
@@ -60,8 +64,12 @@ async def demo_swarm_intelligence():
         stats = await rag.get_knowledge_base_stats()
         print(f"    ✓ 知识库已加载 {stats['vector_count']} 条文档")
     except Exception as e:
-        print(f"    ⚠ 知识库初始化跳过: {e}")
+        print(f"    ⚠ 知识库初始化跳过（网络或模型下载问题）")
+        print(f"      错误信息: {str(e)[:100]}")
         rag = None
+    finally:
+        # 恢复默认超时
+        socket.setdefaulttimeout(None)
     
     # 3. 创建Swarm编排器（启用过程可视化）
     print("\n[3] 创建Swarm编排器...")
