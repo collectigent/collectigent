@@ -10,6 +10,7 @@ from .anthropic import AnthropicProvider
 from .glm import GLMProvider
 from .deepseek import DeepSeekProvider
 from .doubao import DoubaoProvider
+from .qwen import QwenProvider
 
 
 class LLMFactory:
@@ -21,6 +22,7 @@ class LLMFactory:
         ProviderType.GLM: GLMProvider,
         ProviderType.DEEPSEEK: DeepSeekProvider,
         ProviderType.DOUBAO: DoubaoProvider,
+        ProviderType.QWEN: QwenProvider,
     }
     
     @classmethod
@@ -93,6 +95,17 @@ class LLMFactory:
     ) -> DoubaoProvider:
         """创建字节跳动Doubao提供商"""
         config = LLMConfig.for_doubao(model=model, api_key=api_key, **kwargs)
+        return cls.create(config)
+    
+    @classmethod
+    def create_qwen(
+        cls,
+        model: str = "qwen-turbo",
+        api_key: Optional[str] = None,
+        **kwargs
+    ) -> QwenProvider:
+        """创建阿里云通义千问提供商"""
+        config = LLMConfig.for_qwen(model=model, api_key=api_key, **kwargs)
         return cls.create(config)
     
     @classmethod

@@ -7,6 +7,7 @@ from .anthropic import AnthropicProvider
 from .glm import GLMProvider
 from .deepseek import DeepSeekProvider
 from .doubao import DoubaoProvider
+from .qwen import QwenProvider
 
 __all__ = [
     "LLMProvider",
@@ -19,4 +20,5 @@ __all__ = [
     "GLMProvider",
     "DeepSeekProvider",
     "DoubaoProvider",
+    "QwenProvider",
 ]

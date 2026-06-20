@@ -50,12 +50,14 @@ llm = [
     "openai>=1.0",
     "anthropic>=0.18",
     "zhipuai>=2.0",
+    "dashscope>=2.0",
 ]
 all = [
     "openai>=1.0",
     "anthropic>=0.18",
     "zhipuai>=2.0",
     "volcengine-python>=1.0",
+    "dashscope>=2.0",
 ]
 
 [project.urls]

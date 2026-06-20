@@ -1,5 +1,6 @@
 """LLM集成测试"""
 
+import sys
 import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
 
@@ -42,6 +43,9 @@ class TestLLMConfig:
         
         config = LLMConfig(provider=ProviderType.DEEPSEEK)
         assert config.model == "deepseek-chat"
+        
+        config = LLMConfig(provider=ProviderType.QWEN)
+        assert config.model == "qwen-turbo"
     
     def test_config_factory_methods(self):
         """测试工厂方法"""
@@ -54,6 +58,9 @@ class TestLLMConfig:
         
         config = LLMConfig.for_deepseek(api_key="key3")
         assert config.provider == ProviderType.DEEPSEEK
+        
+        config = LLMConfig.for_qwen(api_key="key4")
+        assert config.provider == ProviderType.QWEN
 
 
 class TestLLMResponse:
@@ -84,6 +91,7 @@ class TestLLMFactory:
         assert ProviderType.GLM in providers
         assert ProviderType.DEEPSEEK in providers
         assert ProviderType.DOUBAO in providers
+        assert ProviderType.QWEN in providers
     
     def test_create_openai_provider(self):
         """测试创建OpenAI提供商"""
@@ -103,6 +111,13 @@ class TestLLMFactory:
         with patch.dict("os.environ", {"DEEPSEEK_API_KEY": "test-key"}):
             provider = LLMFactory.create_deepseek()
             assert provider.provider_type == ProviderType.DEEPSEEK
+    
+    def test_create_qwen_provider(self):
+        """测试创建Qwen提供商"""
+        with patch.dict("os.environ", {"DASHSCOPE_API_KEY": "test-key"}):
+            with patch.dict(sys.modules, {"dashscope": MagicMock()}):
+                provider = LLMFactory.create_qwen(model="qwen-plus")
+                assert provider.provider_type == ProviderType.QWEN
 
 
 class TestOpenAIProvider:
@@ -194,3 +209,4 @@ class TestProviderType:
         assert ProviderType.GLM.value == "glm"
         assert ProviderType.DEEPSEEK.value == "deepseek"
         assert ProviderType.DOUBAO.value == "doubao"
+        assert ProviderType.QWEN.value == "qwen"

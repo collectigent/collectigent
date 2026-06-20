@@ -15,6 +15,7 @@ class ProviderType(Enum):
     GLM = "glm"          # 智谱AI
     DEEPSEEK = "deepseek"
     DOUBAO = "doubao"    # 字节跳动
+    QWEN = "qwen"        # 阿里云通义千问
 
 
 @dataclass
@@ -37,6 +38,7 @@ class LLMConfig:
         ProviderType.GLM: "glm-4",
         ProviderType.DEEPSEEK: "deepseek-chat",
         ProviderType.DOUBAO: "doubao-pro-32k",
+        ProviderType.QWEN: "qwen-turbo",
     })
     
     def __post_init__(self):
@@ -62,6 +64,10 @@ class LLMConfig:
     @classmethod
     def for_doubao(cls, model: str = "doubao-pro-32k", **kwargs) -> LLMConfig:
         return cls(provider=ProviderType.DOUBAO, model=model, **kwargs)
+    
+    @classmethod
+    def for_qwen(cls, model: str = "qwen-turbo", **kwargs) -> LLMConfig:
+        return cls(provider=ProviderType.QWEN, model=model, **kwargs)
 
 
 @dataclass
