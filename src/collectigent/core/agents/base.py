@@ -1,5 +1,7 @@
 """Agent基类 - 定义6角色的通用接口"""
 
+from __future__ import annotations
+
 from enum import Enum
 from dataclasses import dataclass, field
 from typing import Any, Optional

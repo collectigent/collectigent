@@ -1,5 +1,7 @@
 """任务编排器 - Agent调度、消息路由、状态管理"""
 
+from __future__ import annotations
+
 import asyncio
 from typing import Optional
 from dataclasses import dataclass, field

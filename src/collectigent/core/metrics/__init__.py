@@ -1,5 +1,7 @@
 """基础涌现指标 - 群体增益、多样性指数、错误修正率"""
 
+from __future__ import annotations
+
 from dataclasses import dataclass, field
 from typing import Optional
 import math

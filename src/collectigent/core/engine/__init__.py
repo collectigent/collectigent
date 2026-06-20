@@ -1,5 +1,7 @@
 """迭代辩论引擎 - 多轮对话循环、观点收敛机制"""
 
+from __future__ import annotations
+
 from enum import Enum
 from dataclasses import dataclass
 from typing import Callable
