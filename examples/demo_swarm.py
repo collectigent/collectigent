@@ -189,13 +189,51 @@ async def demo_swarm_intelligence():
                 content = msg.get("content", {})
                 if isinstance(content, dict):
                     content_type = content.get("type", "unknown")
-                    content_preview = str(content.get("summary", content))[:100]
+                    
+                    # 根据不同类型提取可读内容
+                    if content_type == "task_allocation":
+                        analysis = content.get("analysis", "")
+                        # 清理JSON格式的analysis
+                        if analysis.startswith("```"):
+                            analysis = analysis.replace("```json", "").replace("```", "").strip()
+                        content_preview = analysis[:100] or content.get("main_task", "")[:100]
+                    elif content_type == "research_findings":
+                        findings = content.get("findings", [])
+                        if findings:
+                            finding_content = findings[0].get("content", str(findings[0]))
+                            # 清理可能的格式
+                            finding_content = finding_content.replace("{", "").replace("}", "").replace("'", "")[:100]
+                            content_preview = finding_content
+                        else:
+                            content_preview = "研究发现"
+                    elif content_type == "critique":
+                        objections = content.get("objections", [])
+                        if objections:
+                            content_preview = str(objections[0].get("description", objections[0]))[:100]
+                        else:
+                            content_preview = content.get("criticism", "")[:100]
+                    elif content_type == "innovation_ideas":
+                        ideas = content.get("ideas", [])
+                        if ideas:
+                            content_preview = ideas[0].get("description", str(ideas[0]))[:100]
+                        else:
+                            content_preview = "创新想法"
+                    elif content_type == "synthesis":
+                        content_preview = content.get("final_synthesis", "")[:100]
+                    else:
+                        content_preview = str(content)[:80]
                 else:
                     content_type = "text"
                     content_preview = str(content)[:100]
                 
+                # 清理格式
+                content_preview = content_preview.replace("\n", " ").replace("'", "").replace('"', "").strip()
+                
+                # 去除JSON格式的花括号
+                content_preview = content_preview.replace("{", "").replace("}", "").replace("[", "").replace("]", "")
+                
                 name_str = f"({name})" if name else ""
-                print(f"  {i+1}. [{role}]{name_str} [{content_type}]")
+                print(f"  {i+1}. [{role}]{name_str}")
                 print(f"     {content_preview}...")
         else:
             print("  (已启用verbose模式，沟通过程已在上方显示)")

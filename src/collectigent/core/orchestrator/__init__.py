@@ -192,15 +192,42 @@ class Swarm:
             response = await speaker.think(self._conversation_history)
             self._conversation_history.append(response)
             
-            # 提取响应摘要
+            # 提取响应摘要（更友好的格式）
             if isinstance(response.content, dict):
                 content_type = response.content.get("type", "unknown")
-                content_preview = str(response.content)[:80]
+                
+                # 根据不同类型提取关键内容
+                if content_type == "task_allocation":
+                    content_preview = response.content.get("analysis", "")[:100]
+                elif content_type == "research_findings":
+                    findings = response.content.get("findings", [])
+                    if findings:
+                        content_preview = str(findings[0].get("content", findings[0]))[:100]
+                    else:
+                        content_preview = "研究发现"
+                elif content_type == "critique":
+                    objections = response.content.get("objections", [])
+                    if objections:
+                        content_preview = str(objections[0].get("description", objections[0]))[:100]
+                    else:
+                        content_preview = response.content.get("criticism", "")[:100]
+                elif content_type == "innovation_ideas":
+                    ideas = response.content.get("ideas", [])
+                    if ideas:
+                        content_preview = ideas[0].get("description", str(ideas[0]))[:100]
+                    else:
+                        content_preview = "创新想法"
+                elif content_type == "synthesis":
+                    content_preview = response.content.get("final_synthesis", "")[:100]
+                else:
+                    content_preview = str(response.content)[:80]
             else:
                 content_type = "text"
-                content_preview = str(response.content)[:80]
+                content_preview = str(response.content)[:100]
             
-            self._log(f"    → {content_type}: {content_preview}...", "debate")
+            # 格式化输出
+            content_preview = content_preview.replace("\n", " ").strip()
+            self._log(f"    → {content_preview}...", "debate")
             self._emit("agent_response", {
                 "role": speaker.role.value,
                 "step": self._step,
