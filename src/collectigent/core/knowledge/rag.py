@@ -242,7 +242,7 @@ class RAGFactory:
         cls,
         embedding_provider: str = "openai",
         vector_store: str = "faiss",
-        llm_provider: str = "openai",
+        llm_provider: str = "glm",
         **kwargs,
     ) -> RAGSystem:
         """创建基础RAG系统"""
@@ -281,7 +281,7 @@ class RAGFactory:
         cls,
         embedding_provider: str = "openai",
         vector_store: str = "faiss",
-        llm_provider: str = "openai",
+        llm_provider: str = "glm",
         **kwargs,
     ) -> RAGSystem:
         """创建高级RAG系统"""
