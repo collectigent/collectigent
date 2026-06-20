@@ -180,11 +180,18 @@ async def demo_flow_visualizer():
     history = result.get("history", [])
     for msg in history:
         if msg.get("sender"):
+            # 处理sender可能是字符串或字典的情况
+            sender = msg.get("sender")
+            if isinstance(sender, dict):
+                role = sender.get("value", "unknown")
+            else:
+                role = str(sender)
+            
             flow.add_message({
-                "role": msg.get("sender", {}).get("value", "unknown"),
+                "role": role,
                 "step": len(flow._nodes) + 1,
                 "content": msg.get("content", {}),
-                "content_type": msg.get("content", {}).get("type", ""),
+                "content_type": msg.get("content", {}).get("type", "") if isinstance(msg.get("content"), dict) else "",
             })
     
     # 结束流程记录
@@ -329,7 +336,7 @@ async def main():
     if not os.getenv("ZHIPU_API_KEY"):
         print("\n❌ 请设置 ZHIPU_API_KEY 环境变量")
         print("\n示例命令:")
-        print("  export ZHIPU_API_KEY='your-api-key'")
+        print("  export ZHIPU_API_KEY='8fb5b5e8633dfcdf0af06304bc351e74.3Xl4q8DarMsQoVsp'")
         print("  python examples/demo_debugger.py")
         return
     
