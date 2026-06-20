@@ -14,9 +14,9 @@ if env_file.exists():
                 os.environ[key] = value
 
 from collectigent import Swarm, LLMFactory
+from collectigent.core.orchestrator import SwarmConfig
 from collectigent.core.agents import (
     Leader, Researcher, Critic, Innovator, Synthesizer, Executor,
-    Role
 )
 from collectigent.core.knowledge import RAGFactory
 
@@ -63,10 +63,16 @@ async def demo_swarm_intelligence():
         print(f"    ⚠ 知识库初始化跳过: {e}")
         rag = None
     
-    # 3. 创建Swarm编排器
+    # 3. 创建Swarm编排器（启用过程可视化）
     print("\n[3] 创建Swarm编排器...")
-    swarm = Swarm()
-    print("    ✓ Swarm编排器创建完成")
+    config = SwarmConfig(
+        max_iterations=3,
+        verbose=True,  # 显示详细日志
+        show_process=True,  # 显示处理过程
+    )
+    swarm = Swarm(config=config)
+    print("    ✓ Swarm编排器创建完成 (verbose=True)")
+    print("    ✓ 智能体沟通过程将被展示")
     
     # 4. 注册6个Agent角色
     print("\n[4] 注册6个Agent角色...")
@@ -159,18 +165,35 @@ async def demo_swarm_intelligence():
         
         print(f"\n  • 迭代次数: {iterations}")
         
-        # 显示对话历史
+        # 显示对话历史（如果启用了verbose模式）
         print("\n📋 Agent协作过程:")
         print("-" * 60)
-        messages = result.get("messages", [])
-        for i, msg in enumerate(messages[:10]):  # 只显示前10条
-            role = msg.get("role", "unknown")
-            content = msg.get("content", "")[:100]
-            name = msg.get("name", "")
-            print(f"  {i+1}. [{role}] {name}: {content}...")
+        history = result.get("history", [])
         
-        if len(messages) > 10:
-            print(f"  ... 还有 {len(messages) - 10} 条消息")
+        if history:
+            # 过滤并显示非用户消息
+            agent_messages = [m for m in history if m.get("sender") is not None]
+            for i, msg in enumerate(agent_messages[:15]):  # 只显示前15条
+                sender = msg.get("sender", {})
+                role = sender.get("value", "unknown") if isinstance(sender, dict) else str(sender)
+                name = msg.get("metadata", {}).get("agent_name", "")
+                
+                content = msg.get("content", {})
+                if isinstance(content, dict):
+                    content_type = content.get("type", "unknown")
+                    content_preview = str(content.get("summary", content))[:100]
+                else:
+                    content_type = "text"
+                    content_preview = str(content)[:100]
+                
+                name_str = f"({name})" if name else ""
+                print(f"  {i+1}. [{role}]{name_str} [{content_type}]")
+                print(f"     {content_preview}...")
+        else:
+            print("  (已启用verbose模式，沟通过程已在上方显示)")
+        
+        if len(history) > 15:
+            print(f"  ... 还有 {len(history) - 15} 条消息")
         
         # 7. 解释群体智能如何产生
         print("\n" + "=" * 60)
