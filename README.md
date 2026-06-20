@@ -16,6 +16,7 @@
 | **共享记忆系统** | 短期记忆（对话上下文）+ 长期记忆（知识库检索）的接口与基础实现 | 降低使用门槛 |
 | **任务编排器** | Agent 调度、消息路由、状态管理 | 框架基础设施 |
 | **基础涌现指标** | 群体增益、多样性指数、错误修正率的计算接口 | 建立"可验证"的品牌认知 |
+| **LLM多提供商集成** | 支持OpenAI、Anthropic、GLM、DeepSeek、Doubao、Qwen | 灵活适配多种大模型 |
 
 ## 安装
 
@@ -23,26 +24,35 @@
 pip install collectigent
 ```
 
+或安装完整依赖（包含所有LLM提供商）：
+
+```bash
+pip install collectigent[llm]
+```
+
 或从源码安装：
 
 ```bash
 git clone https://github.com/collectigent/collectigent.git
 cd collectigent
-pip install -e .
+pip install -e ".[dev,llm]"
 ```
 
 ## 快速开始
 
 ```python
 import asyncio
-from collectigent import Swarm
+from collectigent import Swarm, LLMFactory
 from collectigent.core.agents import Leader, Researcher, Critic, Innovator, Synthesizer, Executor
 
 async def main():
+    # 创建LLM提供商（支持OpenAI/Anthropic/GLM/DeepSeek/Doubao/Qwen）
+    llm = LLMFactory.create_openai(model="gpt-4o")
+    
     # 创建群体智能实例
-    swarm = Swarm()
+    swarm = Swarm(llm=llm)
 
-    # 注册6个Agent角色
+    # 注册6个Agent角色（自动配置LLM）
     swarm.register(Leader())
     swarm.register(Researcher())
     swarm.register(Critic())
@@ -83,10 +93,21 @@ collectigent/
 │       │   └── __init__.py  # ShortTermMemory、LongTermMemory、MemorySystem
 │       ├── orchestrator/   # 任务编排器
 │       │   └── __init__.py  # Swarm编排器
-│       └── metrics/         # 涌现指标
-│           └── __init__.py  # EmergenceMetrics
+│       ├── metrics/         # 涌现指标
+│       │   └── __init__.py  # EmergenceMetrics
+│       └── llm/             # LLM多提供商集成
+│           ├── __init__.py
+│           ├── base.py      # LLMProvider基类、LLMConfig、LLMResponse
+│           ├── factory.py   # LLMFactory工厂类
+│           ├── openai.py    # OpenAI提供商
+│           ├── anthropic.py # Anthropic提供商
+│           ├── glm.py       # 智谱AI提供商
+│           ├── deepseek.py  # DeepSeek提供商
+│           ├── doubao.py    # 字节跳动提供商
+│           └── qwen.py      # 阿里云通义千问提供商
 └── tests/
-    └── test_collectigent.py
+    ├── test_collectigent.py
+    └── test_llm.py
 ```
 
 ## 核心概念
@@ -150,6 +171,52 @@ result = metrics.calculate(conversation_messages)
 # - error_correction_rate: 错误修正率（0-1）
 ```
 
+### LLM多提供商集成
+
+支持6大LLM提供商，通过统一接口调用：
+
+```python
+from collectigent import LLMFactory
+
+# OpenAI
+llm = LLMFactory.create_openai(model="gpt-4o")
+
+# Anthropic Claude
+llm = LLMFactory.create_anthropic(model="claude-3-5-sonnet-20241022")
+
+# 智谱AI GLM
+llm = LLMFactory.create_glm(model="glm-4")
+
+# DeepSeek
+llm = LLMFactory.create_deepseek(model="deepseek-chat")
+
+# 字节跳动 Doubao
+llm = LLMFactory.create_doubao(model="doubao-pro-32k")
+
+# 阿里云通义千问
+llm = LLMFactory.create_qwen(model="qwen-turbo")
+```
+
+**环境变量配置：**
+
+| 提供商 | API Key环境变量 | 默认模型 |
+|--------|----------------|----------|
+| OpenAI | OPENAI_API_KEY | gpt-4o |
+| Anthropic | ANTHROPIC_API_KEY | claude-3-5-sonnet |
+| 智谱AI | ZHIPU_API_KEY | glm-4 |
+| DeepSeek | DEEPSEEK_API_KEY | deepseek-chat |
+| 字节Doubao | DOUBAO_API_KEY | doubao-pro-32k |
+| 阿里云Qwen | DASHSCOPE_API_KEY | qwen-turbo |
+
+**Agent调用LLM：**
+
+```python
+from collectigent.core.agents import Leader
+
+leader = Leader(llm=llm)
+response = await leader.call_llm("分析这个问题")
+```
+
 ## 开发
 
 ```bash
@@ -165,7 +232,7 @@ pytest tests/ -v
 
 ## Roadmap
 
-- [ ] v0.2: LLM集成（OpenAI/Anthropic）
+- [x] v0.2: LLM集成（OpenAI/Anthropic/GLM/DeepSeek/Doubao/Qwen）
 - [ ] v0.3: 知识库检索集成
 - [ ] v0.4: 可视化调试工具
 - [ ] v1.0: 生产级稳定版
