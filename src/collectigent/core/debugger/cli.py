@@ -287,8 +287,21 @@ class CLIVisualizer:
         if result:
             print(f"\n  📋 最终结果:")
             print(f"  {Colors.GREEN}{'─' * 55}{Colors.RESET}")
+            
+            # 处理result可能是字典的情况
+            if isinstance(result, dict):
+                # 提取最终综合内容
+                if "final_synthesis" in result:
+                    result_text = result["final_synthesis"]
+                elif "result" in result:
+                    result_text = str(result["result"])
+                else:
+                    result_text = str(result)
+            else:
+                result_text = str(result)
+            
             # 分行显示结果
-            words = result.split()
+            words = result_text.split()
             current_line = "  │ "
             for word in words:
                 if len(current_line) + len(word) < 55:
