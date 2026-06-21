@@ -141,6 +141,16 @@ def format_review_report(result: Dict[str, Any]) -> str:
     
     # 结果摘要
     result_text = result.get("result", "")
+    
+    # 处理result可能是字典的情况
+    if isinstance(result_text, dict):
+        if "final_synthesis" in result_text:
+            result_text = result_text["final_synthesis"]
+        elif "summary" in result_text:
+            result_text = result_text["summary"]
+        else:
+            result_text = str(result_text)
+    
     if result_text:
         report += "📋 审核结论：\n"
         report += "-" * 40 + "\n"
