@@ -16,7 +16,6 @@ class Critic(Agent):
     def __init__(self, name: str = None, llm: "LLMProvider" = None):
         super().__init__(Role.CRITIC, name, llm=llm)
         self._temperature = 0.5  # 批判者温度较低，更理性
-        self._objections = []
     
     async def think(self, context: list[Message]) -> Message:
         """
@@ -28,91 +27,56 @@ class Critic(Agent):
         Returns:
             批判性反馈消息
         """
-        target_views = self._extract_views(context)
-        objections = self._analyze_critically(target_views)
-        has_objection = len(objections) > 0
+        # 提取之前的观点
+        previous_analysis = ""
+        for msg in context:
+            if msg.sender == Role.RESEARCHER:
+                if isinstance(msg.content, dict):
+                    previous_analysis = msg.content.get("analysis", "")
+        
+        task = self._extract_task(context)
+        
+        # 构建批判提示词
+        prompt = f"""请对以下合同进行批判性分析和风险评估：
+
+{task}
+
+已有分析：
+{previous_analysis}
+
+请从以下角度进行批判性分析：
+1. 合同条款的法律漏洞和风险
+2. 当事人权益平衡问题
+3. 违约责任条款的合理性
+4. 争议解决条款的有效性
+5. 潜在的法律陷阱和模糊表述
+
+请列出具体的风险点和修改建议。"""
+
+        # 调用LLM生成响应
+        response_content = await self.call_llm(prompt=prompt)
+        
+        # 简单判断是否有异议（如果响应包含"风险"或"问题"等关键词）
+        has_objection = any(keyword in response_content for keyword in ["风险", "问题", "漏洞", "不合理", "缺失"])
         
         return Message(
             sender=self.role,
             content={
                 "type": "critique",
-                "target_views": target_views,
-                "objections": objections,
+                "criticism": response_content,
+                "objections": [{"description": response_content}],
                 "has_objection": has_objection,
-                "risk_assessment": self._assess_risks(target_views),
+                "risk_assessment": response_content,
             },
             metadata={
                 "confidence": 0.8,
                 "phase": "critique",
-                "objection_count": len(objections),
             }
         )
     
-    def _extract_views(self, context: list[Message]) -> list[dict]:
-        """提取需要批判的观点"""
-        views = []
+    def _extract_task(self, context: list[Message]) -> str:
+        """从上下文提取任务"""
         for msg in context:
-            if msg.sender in [Role.RESEARCHER, Role.INNOVATOR]:
-                if isinstance(msg.content, dict):
-                    views.append({
-                        "source": msg.sender.value,
-                        "content": msg.content,
-                    })
-        return views
-    
-    def _analyze_critically(self, views: list[dict]) -> list[dict]:
-        """
-        批判性分析
-        
-        Returns:
-            异议列表
-        """
-        objections = []
-        for view in views:
-            content = view.get("content", {})
-            
-            # 检查逻辑漏洞
-            if content.get("type") == "research_findings":
-                gaps = content.get("knowledge_gaps", [])
-                if gaps:
-                    objections.append({
-                        "type": "knowledge_gap",
-                        "severity": "high",
-                        "description": f"研究存在知识盲区: {', '.join(gaps)}",
-                    })
-                
-                # 检查可靠性
-                for finding in content.get("findings", []):
-                    if finding.get("reliability", 1) < 0.8:
-                        objections.append({
-                            "type": "reliability_issue",
-                            "severity": "medium",
-                            "description": f"'{finding['aspect']}'的可靠性仅为{finding['reliability']}",
-                        })
-            
-            # 检查创新方案的可行性
-            if content.get("type") == "innovation_ideas":
-                for idea in content.get("ideas", []):
-                    if not idea.get("feasibility"):
-                        objections.append({
-                            "type": "feasibility_issue",
-                            "severity": "high",
-                            "description": f"创新方案'{idea.get('title')}'可行性存疑",
-                        })
-        
-        return objections
-    
-    def _assess_risks(self, views: list[dict]) -> list[dict]:
-        """评估潜在风险"""
-        risks = []
-        if len(views) < 2:
-            risks.append({
-                "type": "insufficient_perspectives",
-                "severity": "medium",
-                "description": "收集的观点数量不足，可能遗漏重要角度",
-            })
-        return risks
-    
-    def add_objection(self, objection: dict):
-        """记录异议"""
-        self._objections.append(objection)
+            if msg.sender is None:
+                return msg.content.get("task", "") if isinstance(msg.content, dict) else str(msg.content)
+        return ""

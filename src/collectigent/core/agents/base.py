@@ -121,15 +121,34 @@ class Agent:
             **kwargs
         )
         
-        # 记录到记忆系统
-        if self._memory:
-            self._memory.remember(f"llm_call_{self.role.value}", {
-                "prompt": prompt,
-                "response": response.content,
-                "usage": response.usage,
-            })
+        # 检查响应是否成功
+        if response.success:
+            # 记录到记忆系统
+            if self._memory:
+                self._memory.remember(f"llm_call_{self.role.value}", {
+                    "prompt": prompt,
+                    "response": response.content,
+                    "usage": response.usage,
+                })
+            return response.content
         
-        return response.content
+        # 如果主LLM失败，尝试使用备用LLM
+        if hasattr(self, '_fallback_llm') and self._fallback_llm:
+            print(f"⚠️ 主LLM调用失败，尝试备用LLM...")
+            try:
+                fallback_response = await self._fallback_llm.generate(
+                    prompt=prompt,
+                    system_prompt=system_prompt,
+                    history=history,
+                    temperature=kwargs.get("temperature", self._temperature),
+                    **kwargs
+                )
+                if fallback_response.success:
+                    return fallback_response.content
+            except Exception as e:
+                print(f"⚠️ 备用LLM也失败: {e}")
+        
+        raise RuntimeError(f"LLM调用失败: {response.error}")
     
     async def call_llm_stream(
         self,

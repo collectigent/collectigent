@@ -8,17 +8,21 @@ from .glm import GLMProvider
 from .deepseek import DeepSeekProvider
 from .doubao import DoubaoProvider
 from .qwen import QwenProvider
+from .kimi import KIMIProvider
+from .minimax import MiniMaxProvider
 
 __all__ = [
     "LLMProvider",
     "LLMConfig",
     "LLMResponse",
-    "LLMFactory",
     "ProviderType",
+    "LLMFactory",
     "OpenAIProvider",
     "AnthropicProvider",
     "GLMProvider",
     "DeepSeekProvider",
     "DoubaoProvider",
     "QwenProvider",
+    "KIMIProvider",
+    "MiniMaxProvider",
 ]

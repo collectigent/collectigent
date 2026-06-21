@@ -16,7 +16,6 @@ class Innovator(Agent):
     def __init__(self, name: str = None, llm: "LLMProvider" = None):
         super().__init__(Role.INNOVATOR, name, llm=llm)
         self._temperature = 1.0  # 创新者温度最高，最大创造性
-        self._ideas = []
     
     async def think(self, context: list[Message]) -> Message:
         """
@@ -29,18 +28,41 @@ class Innovator(Agent):
             创新想法消息
         """
         task = self._extract_task(context)
-        existing_views = self._extract_existing_views(context)
         
-        # 生成创新方案
-        ideas = await self._generate_ideas(task, existing_views)
+        # 提取之前的分析
+        previous_analysis = ""
+        for msg in context:
+            if msg.sender == Role.RESEARCHER:
+                if isinstance(msg.content, dict):
+                    previous_analysis = msg.content.get("analysis", "")
+        
+        # 构建创新提示词
+        prompt = f"""请对以下合同提出创新性的优化建议和解决方案：
+
+{task}
+
+已有分析：
+{previous_analysis}
+
+请从以下角度提出创新方案：
+1. 合同条款的创新性改进建议
+2. 风险防范的创新机制
+3. 权益保障的创新方案
+4. 争议解决的创新方式
+5. 其他创新性的优化建议
+
+请提出具体可行的创新方案。"""
+
+        # 调用LLM生成响应
+        response_content = await self.call_llm(prompt=prompt)
         
         return Message(
             sender=self.role,
             content={
                 "type": "innovation_ideas",
                 "task": task,
-                "ideas": ideas,
-                "cross_domain_insights": self._get_cross_domain_insights(ideas),
+                "ideas": [{"title": "创新方案", "description": response_content}],
+                "innovation_proposals": response_content,
             },
             metadata={"confidence": 0.7, "phase": "innovation"}
         )
@@ -48,63 +70,6 @@ class Innovator(Agent):
     def _extract_task(self, context: list[Message]) -> str:
         """提取任务"""
         for msg in context:
-            if msg.sender == Role.LEADER:
-                data = msg.content
-                if isinstance(data, dict):
-                    return data.get("main_task", "")
+            if msg.sender is None:
+                return msg.content.get("task", "") if isinstance(msg.content, dict) else str(msg.content)
         return ""
-    
-    def _extract_existing_views(self, context: list[Message]) -> list[dict]:
-        """提取现有观点用于参考"""
-        views = []
-        for msg in context:
-            if msg.sender in [Role.RESEARCHER, Role.CRITIC]:
-                views.append(msg.content)
-        return views
-    
-    async def _generate_ideas(self, task: str, existing_views: list[dict]) -> list[dict]:
-        """
-        生成创新方案
-        
-        实际应用中应接入LLM进行创意生成
-        """
-        # 模拟创新方案
-        ideas = [
-            {
-                "title": f"颠覆性方案A",
-                "description": "基于跨领域技术的创新方法",
-                "novelty": 0.9,
-                "feasibility": 0.6,
-                "impact": 0.85,
-                "risks": ["实施难度高", "需要新技术"],
-            },
-            {
-                "title": f"渐进改进方案B",
-                "description": "在现有基础上的优化路径",
-                "novelty": 0.5,
-                "feasibility": 0.85,
-                "impact": 0.6,
-                "risks": ["创新性不足"],
-            },
-            {
-                "title": f"风险对冲方案C",
-                "description": "多元化策略降低风险",
-                "novelty": 0.6,
-                "feasibility": 0.75,
-                "impact": 0.7,
-                "risks": ["复杂度高"],
-            },
-        ]
-        return ideas
-    
-    def _get_cross_domain_insights(self, ideas: list[dict]) -> list[str]:
-        """获取跨界洞察"""
-        return [
-            "借鉴生物界的自适应机制",
-            "应用复杂系统理论",
-            "引入博弈论激励机制",
-        ]
-    
-    def add_idea(self, idea: dict):
-        """添加想法"""
-        self._ideas.append(idea)

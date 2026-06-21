@@ -14,8 +14,10 @@ class ProviderType(Enum):
     ANTHROPIC = "anthropic"
     GLM = "glm"          # 智谱AI
     DEEPSEEK = "deepseek"
-    DOUBAO = "doubao"    # 字节跳动
+    DOUBAO = "doubao"    # 字节跳动豆包
     QWEN = "qwen"        # 阿里云通义千问
+    KIMI = "kimi"        # Moonshot月之暗面
+    MINIMAX = "minimax"  # MiniMax
 
 
 @dataclass
@@ -39,6 +41,8 @@ class LLMConfig:
         ProviderType.DEEPSEEK: "deepseek-chat",
         ProviderType.DOUBAO: "doubao-pro-32k",
         ProviderType.QWEN: "qwen-turbo",
+        ProviderType.KIMI: "moonshot-v1-8k",
+        ProviderType.MINIMAX: "abab6-chat",
     })
     
     def __post_init__(self):
@@ -68,6 +72,14 @@ class LLMConfig:
     @classmethod
     def for_qwen(cls, model: str = "qwen-turbo", **kwargs) -> LLMConfig:
         return cls(provider=ProviderType.QWEN, model=model, **kwargs)
+    
+    @classmethod
+    def for_kimi(cls, model: str = "moonshot-v1-8k", **kwargs) -> LLMConfig:
+        return cls(provider=ProviderType.KIMI, model=model, **kwargs)
+    
+    @classmethod
+    def for_minimax(cls, model: str = "abab6-chat", **kwargs) -> LLMConfig:
+        return cls(provider=ProviderType.MINIMAX, model=model, **kwargs)
 
 
 @dataclass
@@ -80,6 +92,8 @@ class LLMResponse:
     finish_reason: str = "stop"
     latency_ms: float = 0.0
     raw_response: Any = None
+    success: bool = True
+    error: Optional[str] = None
     
     @property
     def total_tokens(self) -> int:

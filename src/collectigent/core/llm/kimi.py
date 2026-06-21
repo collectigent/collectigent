@@ -1,25 +1,40 @@
-"""字节跳动 (Doubao) 提供商实现"""
+"""KIMI (Moonshot) LLM 提供者"""
 
-from __future__ import annotations
-
-import time
-import os
 import json
-from typing import Optional, Any
-
+from typing import Dict, List, Optional
 from .base import LLMProvider, LLMConfig, LLMResponse, ProviderType
 
 
-class DoubaoProvider(LLMProvider):
-    """字节跳动 Doubao API提供商"""
+class KIMIProvider(LLMProvider):
+    """KIMI (Moonshot) 模型提供者"""
     
-    DEFAULT_BASE_URL = "https://api.doubao.com"
+    PROVIDER_NAME = "kimi"
+    BASE_URL = "https://api.moonshot.cn/v1"
     
-    def __init__(self, config: LLMConfig):
+    def __init__(self, config: Optional[LLMConfig] = None):
+        if config is None:
+            config = LLMConfig(
+                provider=ProviderType.KIMI,
+                model="moonshot-v1-8k",
+                api_key="",  # 需要从环境变量 MOONSHOT_API_KEY 获取
+            )
         super().__init__(config)
-        self._api_key = self.config.api_key or os.environ.get("DOUBAO_API_KEY")
-        if not self._api_key:
-            raise ValueError("请提供Doubao API Key或设置DOUBAO_API_KEY环境变量")
+    
+    @property
+    def provider_name(self) -> str:
+        return self.PROVIDER_NAME
+    
+    @property
+    def default_model(self) -> str:
+        return "moonshot-v1-8k"
+    
+    @property
+    def supported_models(self) -> List[str]:
+        return [
+            "moonshot-v1-8k",
+            "moonshot-v1-32k",
+            "moonshot-v1-128k",
+        ]
     
     async def generate(
         self,
@@ -31,16 +46,31 @@ class DoubaoProvider(LLMProvider):
         """生成文本响应"""
         import aiohttp
         
-        url = f"{self.config.base_url or self.DEFAULT_BASE_URL}/v1/chat/completions"
+        # 获取API Key
+        api_key = self.config.api_key
+        if not api_key:
+            import os
+            api_key = os.environ.get("MOONSHOT_API_KEY", "")
+            if not api_key:
+                return LLMResponse(
+                    content="错误: 未设置 MOONSHOT_API_KEY 环境变量",
+                    model=self.config.model,
+                    provider=self.config.provider,
+                    success=False,
+                    error="Missing API Key",
+                )
+        
+        # 准备请求
+        url = f"{self.BASE_URL}/chat/completions"
         headers = {
             "Content-Type": "application/json",
-            "Authorization": f"Bearer {self._api_key}",
+            "Authorization": f"Bearer {api_key}",
         }
         
         messages = self._build_messages(prompt, system_prompt, history)
         
         data = {
-            "model": self.config.model or "doubao-pro-32k",
+            "model": self.config.model or self.default_model,
             "messages": messages,
             "temperature": kwargs.get("temperature", self.config.temperature),
             "max_tokens": kwargs.get("max_tokens", self.config.max_tokens),
@@ -69,7 +99,7 @@ class DoubaoProvider(LLMProvider):
                             model=self.config.model,
                             provider=self.config.provider,
                             success=False,
-                            error=f"Doubao API错误: {response.status} - {error_text}",
+                            error=f"KIMI API错误: {response.status} - {error_text}",
                         )
         except Exception as e:
             return LLMResponse(
@@ -77,7 +107,7 @@ class DoubaoProvider(LLMProvider):
                 model=self.config.model,
                 provider=self.config.provider,
                 success=False,
-                error=f"Doubao请求失败: {str(e)}",
+                error=f"KIMI请求失败: {str(e)}",
             )
     
     async def generate_stream(
@@ -90,16 +120,26 @@ class DoubaoProvider(LLMProvider):
         """流式生成文本响应"""
         import aiohttp
         
-        url = f"{self.config.base_url or self.DEFAULT_BASE_URL}/v1/chat/completions"
+        # 获取API Key
+        api_key = self.config.api_key
+        if not api_key:
+            import os
+            api_key = os.environ.get("MOONSHOT_API_KEY", "")
+            if not api_key:
+                yield "错误: 未设置 MOONSHOT_API_KEY 环境变量"
+                return
+        
+        # 准备请求
+        url = f"{self.BASE_URL}/chat/completions"
         headers = {
             "Content-Type": "application/json",
-            "Authorization": f"Bearer {self._api_key}",
+            "Authorization": f"Bearer {api_key}",
         }
         
         messages = self._build_messages(prompt, system_prompt, history)
         
         data = {
-            "model": self.config.model or "doubao-pro-32k",
+            "model": self.config.model or self.default_model,
             "messages": messages,
             "temperature": kwargs.get("temperature", self.config.temperature),
             "max_tokens": kwargs.get("max_tokens", self.config.max_tokens),
@@ -132,6 +172,6 @@ class DoubaoProvider(LLMProvider):
                                     continue
                     else:
                         error_text = await response.text()
-                        yield f"Doubao API错误: {response.status} - {error_text}"
+                        yield f"KIMI API错误: {response.status} - {error_text}"
         except Exception as e:
-            yield f"Doubao请求失败: {str(e)}"
+            yield f"KIMI请求失败: {str(e)}"

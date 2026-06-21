@@ -11,6 +11,8 @@ from .glm import GLMProvider
 from .deepseek import DeepSeekProvider
 from .doubao import DoubaoProvider
 from .qwen import QwenProvider
+from .kimi import KIMIProvider
+from .minimax import MiniMaxProvider
 
 
 class LLMFactory:
@@ -23,6 +25,8 @@ class LLMFactory:
         ProviderType.DEEPSEEK: DeepSeekProvider,
         ProviderType.DOUBAO: DoubaoProvider,
         ProviderType.QWEN: QwenProvider,
+        ProviderType.KIMI: KIMIProvider,
+        ProviderType.MINIMAX: MiniMaxProvider,
     }
     
     @classmethod
@@ -106,6 +110,28 @@ class LLMFactory:
     ) -> QwenProvider:
         """创建阿里云通义千问提供商"""
         config = LLMConfig.for_qwen(model=model, api_key=api_key, **kwargs)
+        return cls.create(config)
+    
+    @classmethod
+    def create_kimi(
+        cls,
+        model: str = "moonshot-v1-8k",
+        api_key: Optional[str] = None,
+        **kwargs
+    ) -> KIMIProvider:
+        """创建KIMI (Moonshot) 提供商"""
+        config = LLMConfig.for_kimi(model=model, api_key=api_key, **kwargs)
+        return cls.create(config)
+    
+    @classmethod
+    def create_minimax(
+        cls,
+        model: str = "abab6-chat",
+        api_key: Optional[str] = None,
+        **kwargs
+    ) -> MiniMaxProvider:
+        """创建MiniMax提供商"""
+        config = LLMConfig.for_minimax(model=model, api_key=api_key, **kwargs)
         return cls.create(config)
     
     @classmethod
