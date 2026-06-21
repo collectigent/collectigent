@@ -254,6 +254,18 @@ async def demo_metrics_dashboard():
     
     # 更新指标
     metrics = result.get("metrics", {})
+    
+    # 处理metrics格式（可能嵌套在current中）
+    if "current" in metrics:
+        # 如果metrics包含current嵌套，取current中的值
+        metrics = metrics.get("current", {})
+    
+    # 确保所有指标字段存在
+    metrics.setdefault("group_gain", 0.0)
+    metrics.setdefault("diversity_index", 0.0)
+    metrics.setdefault("error_correction_rate", 0.0)
+    metrics.setdefault("confidence", 0.0)
+    
     dashboard.update_metrics(metrics)
     
     # 结束仪表盘
