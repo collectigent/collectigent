@@ -180,14 +180,14 @@ class DocxLoader(DocumentLoader):
     def _import_dependencies(self):
         """导入DOCX依赖"""
         try:
-            global docx
+            global DocxDocument
             from docx import Document as DocxDocument
         except ImportError:
             raise ImportError("请安装python-docx: pip install python-docx")
     
     def load(self, path: str) -> Document:
         """加载DOCX文件"""
-        doc = docx.Document(path)
+        doc = DocxDocument(path)
         content = "\n".join([paragraph.text for paragraph in doc.paragraphs])
         
         return Document(
