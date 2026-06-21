@@ -28,21 +28,47 @@ class Synthesizer(Agent):
             综合结论消息
         """
         all_views = self._collect_all_views(context)
-        consensus = self._find_consensus(all_views)
-        conflicts = self._resolve_conflicts(all_views)
-        synthesis = self._create_synthesis(all_views, consensus, conflicts)
+        
+        # 调用LLM进行综合分析
+        if self._llm:
+            synthesis_text = await self._generate_synthesis(all_views)
+        else:
+            consensus = self._find_consensus(all_views)
+            conflicts = self._resolve_conflicts(all_views)
+            synthesis = self._create_synthesis(all_views, consensus, conflicts)
+            synthesis_text = synthesis
         
         return Message(
             sender=self.role,
             content={
                 "type": "synthesis",
-                "consensus_points": consensus,
-                "resolved_conflicts": conflicts,
-                "final_synthesis": synthesis,
+                "all_views": str(all_views)[:500],
+                "final_synthesis": synthesis_text,
                 "remaining_dissent": self._get_remaining_dissent(all_views),
             },
             metadata={"confidence": 0.85, "phase": "synthesis"}
         )
+    
+    async def _generate_synthesis(self, views: dict) -> str:
+        """使用LLM生成综合结论"""
+        # 构建各角色观点摘要
+        views_summary = []
+        for role, contents in views.items():
+            if contents:
+                summary = f"【{role.value}观点】: {str(contents)[:300]}"
+                views_summary.append(summary)
+        
+        prompt = f"""作为综合者，请整合以下各方观点，形成最终结论：
+
+{chr(10).join(views_summary)}
+
+请用一段话总结各方观点，并给出最终建议。"""
+        
+        try:
+            response = await self.call_llm(prompt)
+            return response
+        except Exception:
+            return "综合各方观点形成结论" if views_summary else "需要更多输入"
     
     def _collect_all_views(self, context: list[Message]) -> dict:
         """收集所有观点"""

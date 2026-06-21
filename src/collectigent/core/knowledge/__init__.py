@@ -5,7 +5,7 @@ from .splitter import TextSplitter, ChunkConfig
 from .embedding import EmbeddingProvider, EmbeddingConfig
 from .vector_store import VectorStore, VectorStoreType
 from .retriever import Retriever, RetrieverConfig
-from .rag import RAGSystem, RAGConfig
+from .rag import RAGSystem, RAGConfig, RAGFactory
 
 __all__ = [
     "DocumentLoader",
@@ -20,4 +20,5 @@ __all__ = [
     "RetrieverConfig",
     "RAGSystem",
     "RAGConfig",
+    "RAGFactory",
 ]

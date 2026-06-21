@@ -238,7 +238,10 @@ class LocalEmbeddingProvider(EmbeddingProvider):
     async def embed(self, texts: List[str]) -> List[List[float]]:
         """生成Embedding"""
         embeddings = self._model.encode(texts)
-        return embeddings.tolist()
+        # 处理numpy array或普通list
+        if hasattr(embeddings, 'tolist'):
+            return embeddings.tolist()
+        return embeddings
     
     async def embed_batch(self, texts: List[str]) -> List[List[float]]:
         """本地模型直接处理所有文本"""

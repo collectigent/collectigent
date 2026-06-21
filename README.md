@@ -106,14 +106,19 @@ collectigent/
 │           ├── deepseek.py  # DeepSeek提供商
 │           ├── doubao.py    # 字节跳动提供商
 │           └── qwen.py      # 阿里云通义千问提供商
-│       └── knowledge/       # 知识库检索模块
-│           ├── __init__.py
-│           ├── loader.py    # 文档加载器(txt/md/pdf/docx)
-│           ├── splitter.py  # 文本分块器
-│           ├── embedding.py # Embedding向量化器
-│           ├── vector_store.py # 向量存储(FAISS/Pinecone/Weaviate)
-│           ├── retriever.py # 检索器
-│           └── rag.py       # RAG系统
+│       ├── knowledge/       # 知识库检索模块
+│       │   ├── __init__.py
+│       │   ├── loader.py    # 文档加载器(txt/md/pdf/docx)
+│       │   ├── splitter.py  # 文本分块器
+│       │   ├── embedding.py # Embedding向量化器
+│       │   ├── vector_store.py # 向量存储(FAISS/Pinecone/Weaviate)
+│       │   ├── retriever.py # 检索器
+│       │   └── rag.py       # RAG系统
+│       └── debugger/       # 可视化调试工具
+│           ├── __init__.py  # Debugger主类
+│           ├── cli.py       # CLI可视化组件
+│           ├── flow.py      # 消息流程可视化
+│           └── dashboard.py # 涌现指标仪表盘
 └── tests/
     ├── test_collectigent.py
     ├── test_llm.py
@@ -133,8 +138,8 @@ collectigent/
     ┌───────────┼───────────┐
     │           │           │
 ┌───▼───┐  ┌───▼───┐  ┌───▼───┐
-│Research│  │Critic │  │Innov.│
-│研究者  │  │批判者 │  │创新者 │
+│Research│ │Critic │  │ Innov.│
+│研究者  │  │ 批判者 │  │ 创新者 │
 └───┬───┘  └───┬───┘  └───┬───┘
     │          │          │
     └──────────┼──────────┘
@@ -289,6 +294,81 @@ result1 = await rag.query("什么是群体智能？")
 result2 = await rag.query("它和传统AI有什么区别？")  # 支持上下文理解
 ```
 
+### 可视化调试工具 (v0.4)
+
+提供实时可视化调试功能，支持CLI界面、流程图和指标仪表盘：
+
+```python
+from collectigent import Swarm, create_debugger
+
+# 创建调试器
+debugger = create_debugger(
+    enable_cli=True,      # 启用CLI可视化
+    enable_flow=True,     # 启用流程可视化
+    enable_dashboard=True, # 启用指标仪表盘
+)
+
+# 集成到Swarm
+config = SwarmConfig(
+    max_iterations=3,
+    verbose=True,
+    progress_callback=debugger.on_event,
+)
+
+swarm = Swarm(config=config)
+
+# 开始调试会话
+debugger.start("人工智能将如何改变工作方式？")
+
+# 执行任务...
+result = await swarm.run("人工智能将如何改变工作方式？")
+
+# 结束会话并打印摘要
+debugger.end(result.get("result", ""), result.get("metrics", {}))
+debugger.print_summary()
+```
+
+**CLI可视化输出示例：**
+
+```
+═══════════════════════════════════════════════════════════════
+                    群体智能调试会话
+═══════════════════════════════════════════════════════════════
+📌 任务: 人工智能将如何改变工作方式？
+
+⏳ 等待Agent响应...
+
+──────────────────────────────────────────────────────────────
+│ [步骤 1] 👑 领导者 - 张三
+──────────────────────────────────────────────────────────────
+  💭 思考中... ✓
+
+  📝 响应内容:
+  ───────────────────────────────────────────────────────────
+  │ main_task: 分析人工智能对未来工作方式的影响及应对策略...
+  ───────────────────────────────────────────────────────────
+```
+
+**涌现指标仪表盘：**
+
+```
+═══════════════════════════════════════════════════════════════
+                    涌现指标仪表盘
+═══════════════════════════════════════════════════════════════
+
+  📊 群体增益 (Group Gain)
+     [████████████░░░░] 1.25 ✓
+     → 群体表现优于个体
+
+  🌈 多样性指数 (Diversity)
+     [████████████████░░] 0.85 ✓
+     → 高多样性带来更多创意
+
+  🔧 错误修正率 (Error Correction)
+     [█████████░░░░░░░░░] 0.45 ✓
+     → 有效识别和修正错误
+```
+
 ## 开发
 
 ```bash
@@ -306,7 +386,7 @@ pytest tests/ -v
 
 - [x] v0.2: LLM集成（OpenAI/Anthropic/GLM/DeepSeek/Doubao/Qwen）
 - [x] v0.3: 知识库检索集成（RAG/FAISS/Pinecone）
-- [ ] v0.4: 可视化调试工具
+- [x] v0.4: 可视化调试工具（CLI/流程图/指标仪表盘）
 - [ ] v1.0: 生产级稳定版
 
 ## 贡献

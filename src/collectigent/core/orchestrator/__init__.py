@@ -3,7 +3,11 @@
 from __future__ import annotations
 
 import asyncio
-from typing import Optional
+from typing import Optional, Callable, Any, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from ..agents.base import Agent, Message
+
 from dataclasses import dataclass, field
 
 from ..agents.base import Agent, Role, Message
@@ -19,6 +23,10 @@ class SwarmConfig:
     convergence_threshold: float = 0.8
     debate_rounds: int = 3
     enable_memory: bool = True
+    # 可视化配置
+    verbose: bool = False  # 是否输出详细日志
+    show_process: bool = False  # 是否显示处理过程
+    progress_callback: Optional[Callable[[str, dict], None]] = None  # 进度回调函数
 
 
 class Swarm:
@@ -40,6 +48,26 @@ class Swarm:
         self._metrics: EmergenceMetrics = EmergenceMetrics()
         self._state: dict = field(default_factory=dict)
         self._conversation_history: list[Message] = []
+        self._step = 0  # 步骤计数器
+    
+    def _log(self, message: str, level: str = "info") -> None:
+        """输出日志"""
+        if self.config.verbose or self.config.show_process:
+            prefix = {
+                "info": "📝",
+                "agent": "🤖",
+                "debate": "💬",
+                "success": "✅",
+                "warning": "⚠️",
+            }.get(level, "📝")
+            print(f"{prefix} {message}")
+    
+    def _emit(self, event: str, data: dict = None) -> None:
+        """发送进度事件"""
+        if self.config.progress_callback:
+            self.config.progress_callback(event, data or {})
+        if self.config.verbose:
+            print(f"📡 Event: {event} | Data: {data}")
     
     def register(self, agent: Agent) -> None:
         """注册Agent"""
@@ -88,6 +116,7 @@ class Swarm:
         # 初始化
         self._conversation_history = []
         self._state = {"phase": "start", "iteration": 0}
+        self._step = 0
         
         # 添加用户消息
         user_msg = Message(
@@ -96,19 +125,42 @@ class Swarm:
         )
         self._conversation_history.append(user_msg)
         
+        self._log(f"开始处理任务: {task[:50]}...", "info")
+        self._emit("task_start", {"task": task})
+        
         # 触发Leader进行任务分解
         if Role.LEADER in self._agents:
+            self._step += 1
+            self._log(f"[{self._step}] Leader 进行任务分解", "agent")
+            self._emit("agent_thinking", {"role": "leader", "step": self._step})
+            
             leader_msg = await self._agents[Role.LEADER].think(self._conversation_history)
             self._conversation_history.append(leader_msg)
+            
+            self._emit("agent_response", {
+                "role": "leader",
+                "step": self._step,
+                "content_type": leader_msg.content.get("type") if isinstance(leader_msg.content, dict) else "text"
+            })
         
         # 执行辩论流程
         await self._run_debate()
         
         # 最终综合
+        self._step += 1
+        self._log(f"[{self._step}] Synthesizer 综合各方观点", "agent")
+        self._emit("synthesis_start", {"step": self._step})
+        
         final_result = await self._finalize()
         
         # 更新指标
         self._metrics.record_run(self._conversation_history)
+        
+        self._log(f"处理完成! 共 {len(self._conversation_history)} 条消息", "success")
+        self._emit("task_complete", {
+            "message_count": len(self._conversation_history),
+            "metrics": self._metrics.get_summary()
+        })
         
         return {
             "result": final_result,
@@ -118,6 +170,9 @@ class Swarm:
     
     async def _run_debate(self) -> None:
         """运行辩论流程"""
+        self._log(f"开始辩论流程 (最多 {self.config.max_iterations} 轮)", "debate")
+        self._emit("debate_start", {"max_iterations": self.config.max_iterations})
+        
         for iteration in range(self.config.max_iterations):
             self._state["iteration"] = iteration
             self._state["phase"] = f"debate_{iteration}"
@@ -127,14 +182,67 @@ class Swarm:
             if speaker is None:
                 break
             
+            # 发言
+            self._step += 1
+            role_display = speaker.name or speaker.role.value
+            self._log(f"[{self._step}] {role_display} 发言...", "agent")
+            self._emit("agent_thinking", {"role": speaker.role.value, "step": self._step, "iteration": iteration})
+            
             # 获取Agent思考
             response = await speaker.think(self._conversation_history)
             self._conversation_history.append(response)
             
+            # 提取响应摘要（更友好的格式）
+            if isinstance(response.content, dict):
+                content_type = response.content.get("type", "unknown")
+                
+                # 根据不同类型提取关键内容
+                if content_type == "task_allocation":
+                    content_preview = response.content.get("analysis", "")[:100]
+                elif content_type == "research_findings":
+                    findings = response.content.get("findings", [])
+                    if findings:
+                        content_preview = str(findings[0].get("content", findings[0]))[:100]
+                    else:
+                        content_preview = "研究发现"
+                elif content_type == "critique":
+                    objections = response.content.get("objections", [])
+                    if objections:
+                        content_preview = str(objections[0].get("description", objections[0]))[:100]
+                    else:
+                        content_preview = response.content.get("criticism", "")[:100]
+                elif content_type == "innovation_ideas":
+                    ideas = response.content.get("ideas", [])
+                    if ideas:
+                        content_preview = ideas[0].get("description", str(ideas[0]))[:100]
+                    else:
+                        content_preview = "创新想法"
+                elif content_type == "synthesis":
+                    content_preview = response.content.get("final_synthesis", "")[:100]
+                else:
+                    content_preview = str(response.content)[:80]
+            else:
+                content_type = "text"
+                content_preview = str(response.content)[:100]
+            
+            # 格式化输出
+            content_preview = content_preview.replace("\n", " ").strip()
+            self._log(f"    → {content_preview}...", "debate")
+            self._emit("agent_response", {
+                "role": speaker.role.value,
+                "step": self._step,
+                "content_type": content_type,
+                "iteration": iteration
+            })
+            
             # 检查收敛
             if self._check_convergence():
                 self._state["phase"] = "converged"
+                self._log("检测到收敛，辩论结束", "success")
+                self._emit("debate_converged", {"iteration": iteration})
                 break
+        
+        self._log(f"辩论流程结束，共 {iteration + 1} 轮", "debate")
     
     def _select_next_speaker(self) -> Optional[Agent]:
         """选择下一个发言的Agent"""

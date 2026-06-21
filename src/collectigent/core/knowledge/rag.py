@@ -44,7 +44,8 @@ class RAGSystem(ABC):
     
     def __init__(self, config: RAGConfig):
         self.config = config
-        self._retriever = Retriever(config.retriever_config)
+        from .retriever import SemanticRetriever
+        self._retriever = SemanticRetriever(config.retriever_config)
         
         if config.llm_config:
             self._llm = LLMFactory.create(config.llm_config)
@@ -241,7 +242,7 @@ class RAGFactory:
         cls,
         embedding_provider: str = "openai",
         vector_store: str = "faiss",
-        llm_provider: str = "openai",
+        llm_provider: str = "glm",
         **kwargs,
     ) -> RAGSystem:
         """创建基础RAG系统"""
@@ -280,7 +281,7 @@ class RAGFactory:
         cls,
         embedding_provider: str = "openai",
         vector_store: str = "faiss",
-        llm_provider: str = "openai",
+        llm_provider: str = "glm",
         **kwargs,
     ) -> RAGSystem:
         """创建高级RAG系统"""
