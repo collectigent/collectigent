@@ -124,20 +124,32 @@ async def load_contract(file_path: str = None) -> str:
         if os.path.exists(full_path):
             print(f"📄 正在加载文档: {file_path}")
             try:
-                loader = DocumentLoader()
-                docs = await loader.load(full_path)
-                if docs:
-                    content = "\n\n".join(doc.content for doc in docs)
-                    print(f"   ✓ 文档加载成功 ({len(content)} 字符)")
-                    return content
+                # 使用 DocumentLoader.create() 方法创建具体的加载器
+                from collectigent.core.knowledge.loader import DocumentLoader, FileType
+                
+                # 检测文件类型并创建对应的加载器
+                file_type = DocumentLoader.detect_file_type(full_path)
+                loader = DocumentLoader.create(file_type)
+                doc = loader.load(full_path)
+                
+                if doc:
+                    print(f"   ✓ 文档加载成功 ({len(doc.content)} 字符)")
+                    return doc.content
+            except ImportError as e:
+                print(f"   ⚠ 缺少依赖: {str(e)}")
+                print("   将尝试使用文本方式读取...")
             except Exception as e:
                 print(f"   ⚠ 文档加载失败: {str(e)}")
                 print("   将尝试使用文本方式读取...")
-                try:
-                    with open(full_path, 'r', encoding='utf-8', errors='ignore') as f:
-                        return f.read()
-                except:
-                    print("   ✗ 无法读取文档内容")
+            
+            # 回退到文本读取方式
+            try:
+                with open(full_path, 'r', encoding='utf-8', errors='ignore') as f:
+                    content = f.read()
+                    print(f"   ✓ 文本方式读取成功 ({len(content)} 字符)")
+                    return content
+            except Exception as e:
+                print(f"   ✗ 无法读取文档内容: {str(e)}")
     
     # 返回示例合同
     print("📄 使用示例合同")
