@@ -3,7 +3,8 @@
 from __future__ import annotations
 
 import asyncio
-from typing import Optional, Callable, Any, TYPE_CHECKING
+import time
+from typing import Optional, Callable, Any, TYPE_CHECKING, Dict, List
 
 if TYPE_CHECKING:
     from ..agents.base import Agent, Message
@@ -11,7 +12,7 @@ if TYPE_CHECKING:
 from dataclasses import dataclass, field
 
 from ..agents.base import Agent, Role, Message
-from ..memory import Memory, ShortTermMemory
+from ..memory.shared_memory import SharedMemory, MemoryType, init_shared_memory
 from ..engine import DebateEngine, ConsensusProtocol
 from ..metrics import EmergenceMetrics
 from .role_model_config import (
@@ -44,22 +45,25 @@ class Swarm:
     - 协调Agent间的消息传递
     - 管理辩论流程
     - 计算涌现指标
+    - 管理共享记忆系统
     """
     
     def __init__(
         self,
         config: SwarmConfig = None,
         model_config: MultiModelConfig = None,
+        memory: SharedMemory = None,
     ):
         self.config = config or SwarmConfig()
         self._model_config = model_config or create_default_config()
         self._agents: dict[Role, Agent] = {}
-        self._memory: Optional[Memory] = None
+        self._memory: SharedMemory = memory or init_shared_memory()
         self._debate_engine: Optional[DebateEngine] = None
         self._metrics: EmergenceMetrics = EmergenceMetrics()
         self._state: dict = field(default_factory=dict)
         self._conversation_history: list[Message] = []
         self._step = 0  # 步骤计数器
+        self._memory_enabled = self.config.enable_memory
     
     def _log(self, message: str, level: str = "info") -> None:
         """输出日志"""
@@ -129,6 +133,16 @@ class Swarm:
         self._state = {"phase": "start", "iteration": 0}
         self._step = 0
         
+        # 将任务存储到共享记忆
+        if self._memory_enabled:
+            self._memory.add(
+                key=f"task_{self._step}_{int(time.time())}",
+                value={"task": task, "plan": initial_plan, "timestamp": time.time()},
+                memory_type=MemoryType.SHORT_TERM,
+                tags=["task", "initial"],
+                source_role="system"
+            )
+        
         # 添加用户消息
         user_msg = Message(
             sender=None,  # 用户消息
@@ -148,6 +162,10 @@ class Swarm:
             leader_msg = await self._agents[Role.LEADER].think(self._conversation_history)
             self._conversation_history.append(leader_msg)
             
+            # 存储Leader的输出到共享记忆
+            if self._memory_enabled:
+                self._store_agent_response(Role.LEADER, leader_msg.content)
+            
             self._emit("agent_response", {
                 "role": "leader",
                 "step": self._step,
@@ -164,6 +182,16 @@ class Swarm:
         
         final_result = await self._finalize()
         
+        # 存储最终结果到共享记忆
+        if self._memory_enabled:
+            self._memory.add(
+                key=f"final_result_{int(time.time())}",
+                value=final_result,
+                memory_type=MemoryType.LONG_TERM,
+                tags=["result", "final"],
+                source_role="system"
+            )
+        
         # 更新指标
         self._metrics.record_run(self._conversation_history)
         
@@ -178,6 +206,33 @@ class Swarm:
             "metrics": self._metrics.get_summary(),
             "history": [m.to_dict() for m in self._conversation_history],
         }
+    
+    def _store_agent_response(self, role: Role, content: Any):
+        """
+        存储Agent的响应到共享记忆
+        
+        Args:
+            role: Agent角色
+            content: 响应内容
+        """
+        if not self._memory_enabled:
+            return
+        
+        # 确定标签
+        tags = [role.value]
+        if isinstance(content, dict):
+            content_type = content.get("type", "")
+            if content_type:
+                tags.append(content_type)
+        
+        # 存储到共享记忆
+        self._memory.add(
+            key=f"agent_response_{role.value}_{int(time.time())}",
+            value=content,
+            memory_type=MemoryType.SHORT_TERM,
+            tags=tags,
+            source_role=role.value
+        )
     
     async def _run_debate(self) -> None:
         """运行辩论流程"""
@@ -222,6 +277,10 @@ class Swarm:
                         # 获取Agent思考
                         response = await speaker.think(self._conversation_history)
                         self._conversation_history.append(response)
+                        
+                        # 存储响应到共享记忆
+                        if self._memory_enabled:
+                            self._store_agent_response(role, response.content)
                         
                         # 提取响应摘要（更友好的格式）
                         if isinstance(response.content, dict):

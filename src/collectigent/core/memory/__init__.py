@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+# 导出基础类
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from typing import Any, Optional
@@ -238,3 +239,28 @@ class MemorySystem:
             "short_term": self.short_term.search(query),
             "long_term": self.long_term.search(query),
         }
+
+
+# 导出共享记忆系统
+from .shared_memory import (
+    SharedMemory,
+    MemoryType,
+    MemoryEntry,
+    MemoryContext,
+    get_shared_memory,
+    init_shared_memory,
+)
+
+__all__ = [
+    "Memory",
+    "MemoryItem",
+    "ShortTermMemory",
+    "LongTermMemory",
+    "MemorySystem",
+    "SharedMemory",
+    "MemoryType",
+    "MemoryEntry",
+    "MemoryContext",
+    "get_shared_memory",
+    "init_shared_memory",
+]

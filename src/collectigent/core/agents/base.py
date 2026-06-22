@@ -4,11 +4,12 @@ from __future__ import annotations
 
 from enum import Enum
 from dataclasses import dataclass, field
-from typing import Any, Optional, TYPE_CHECKING
+from typing import Any, Optional, TYPE_CHECKING, List, Dict
 import uuid
 
 if TYPE_CHECKING:
     from ..llm import LLMProvider, LLMConfig
+    from ..memory.shared_memory import SharedMemory, MemoryType, MemoryContext
 
 
 class Role(Enum):
@@ -49,7 +50,8 @@ class Agent:
         self._llm = llm
         self._temperature = 0.7
         self._tools = []
-        self._memory = None
+        self._memory: Optional["SharedMemory"] = None
+        self._memory_context: Optional["MemoryContext"] = None
         self._state = {}
     
     @property
@@ -72,9 +74,53 @@ class Agent:
         if 0 <= value <= 2:
             self._temperature = value
     
-    def attach_memory(self, memory: "Memory"):
-        """挂载记忆系统"""
+    def attach_memory(self, memory: "SharedMemory"):
+        """挂载共享记忆系统"""
+        from ..memory.shared_memory import MemoryContext
+        
         self._memory = memory
+        self._memory_context = MemoryContext(memory)
+        self._memory_context.set_role(self.role.value)
+    
+    def remember(self, key: str, value: Any, memory_type: "MemoryType" = None, tags: List[str] = None):
+        """
+        记住信息到共享记忆
+        
+        Args:
+            key: 记忆键
+            value: 记忆内容
+            memory_type: 记忆类型（短期/长期）
+            tags: 标签列表
+        """
+        if self._memory_context:
+            memory_type = memory_type or MemoryType.SHORT_TERM
+            self._memory_context.remember(key, value, memory_type, tags)
+    
+    def recall(self, query: str) -> List[Dict]:
+        """
+        从共享记忆中回忆相关信息
+        
+        Args:
+            query: 搜索查询
+        
+        Returns:
+            匹配的记忆列表
+        """
+        if self._memory_context:
+            return self._memory_context.recall(query)
+        return []
+    
+    def get_recent_context(self, max_items: int = 10) -> List[Dict]:
+        """获取最近的对话上下文"""
+        if self._memory_context:
+            return self._memory_context.get_recent_context(max_items)
+        return []
+    
+    def get_role_context(self, role: str, max_items: int = 10) -> List[Dict]:
+        """获取某个角色的贡献历史"""
+        if self._memory_context:
+            return self._memory_context.get_role_context(role, max_items)
+        return []
     
     def add_tool(self, tool: callable):
         """注册工具"""
