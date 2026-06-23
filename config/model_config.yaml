@@ -19,11 +19,11 @@ model_presets:
       temperature: 0.5
     innovator:
       provider: doubao       # 豆包
-      model: deepseek-v4-pro-260425
+      model: doubao-pro-32k
       temperature: 0.9
     synthesizer:
       provider: kimi        # KIMI
-      model: kimi-k2.6
+      model: moonshot-v1-32k
       temperature: 0.6
     executor:
       provider: glm
@@ -138,16 +138,16 @@ model_presets:
       model: glm-4-plus
       temperature: 0.4
 
-# API Keys 配置（请使用环境变量设置，不要在此文件中硬编码）
+# API Keys 配置（请填入您的实际API Key）
 api_keys:
-  openai: ""      # 使用环境变量 OPENAI_API_KEY
-  anthropic: ""   # 使用环境变量 ANTHROPIC_API_KEY
-  glm: ""         # 使用环境变量 ZHIPU_API_KEY
-  deepseek: ""    # 使用环境变量 DEEPSEEK_API_KEY
-  doubao: ""      # 使用环境变量 DOUBAO_API_KEY
-  qwen: ""        # 使用环境变量 QWEN_API_KEY
-  kimi: ""        # 使用环境变量 MOONSHOT_API_KEY
-  minimax: ""     # 使用环境变量 MINIMAX_API_KEY
+  openai: ""      # OpenAI API Key (设置环境变量 OPENAI_API_KEY)
+  anthropic: ""   # Anthropic API Key (设置环境变量 ANTHROPIC_API_KEY)
+  glm: ""         # 智谱AI API Key (设置环境变量 ZHIPU_API_KEY)
+  deepseek: ""    # DeepSeek API Key (设置环境变量 DEEPSEEK_API_KEY)
+  doubao: ""      # 字节豆包 API Key (设置环境变量 DOUBAO_API_KEY)
+  qwen: ""        # 阿里云通义千问 API Key (设置环境变量 QWEN_API_KEY)
+  kimi: ""        # Moonshot KIMI API Key (设置环境变量 MOONSHOT_API_KEY)
+  minimax: ""     # MiniMax API Key (设置环境变量 MINIMAX_API_KEY)
 
 # 使用的预设配置
 active_preset: balanced
